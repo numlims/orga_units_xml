@@ -1,0 +1,31 @@
+# generate yaml template structure example with dummy data completely random and not similar to real data
+metadata:
+  source: XMLIMPORT
+
+organisation_units:
+  centers:
+    - code: RAPID_ELAPSE_01_Dummy
+      name_de: NUM_Dummy_ELAPSE
+      name_en: NUM_Dummy_ELAPSE
+      parent_code: RAPID_ELAPSE
+      storage_root_location_id: Dummy Location
+      short_name: Dummy
+
+all_organisation_unit_assignments:
+  - role: "ROLE_ADMIN"
+    users:
+      - username: "dummy_admin"
+
+study_permissions:
+  study_profile_ref: "DUMMY_STUDY"
+  study_code: "DUMMY_CODE"
+
+storage_location_assignments_template:
+  root_location:
+    location_id: "Dummy Location"
+  root_sub_locations:
+    - location_id: ${ storage_root_location_id }
+      sub_locations:
+        - location_id: "Dummy ${short_name} Sub Location"
+          location_schema_ref: "DUMMY_SCHEMA"
+          inherit_temperature: true

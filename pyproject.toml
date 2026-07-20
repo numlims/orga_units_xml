@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools"] # list of packages needed to build your package
+build-backend = "setuptools.build_meta" # name of the python object that frontends use to perform the build
+
+[project]
+name = "orga_units_xml"
+version = "0.0.1"
+authors = [
+  { name="numlims", email="numlims@med.uni-greifswald.de"}
+]
+description = "generate orga units and it's related xml files."
+readme = "readme.md"
+requires-python = ">=3.14.6"
+dependencies = [
+  "traction @ git+https://github.com/numlims/traction.git",
+  "lxml>=5.2.0",
+  "PyYAML>=6.0.1"
+
+]
+classifiers = [
+  "Programming Language :: Python :: 3"
+]
+
+[project.scripts]
+orga_units_xml = "orga_units_xml:main"
+
+[tool.setuptools]
+packages = ["orga_units_xml"]
+
+
