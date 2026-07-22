@@ -5,7 +5,7 @@ from pathlib import Path
 
 from lxml import etree as ET
 
-from orga_units_xml import build_xml_documents_from_yaml
+from generator import build_xml_documents_from_yaml
 
 
 def parse_args() -> argparse.Namespace:
