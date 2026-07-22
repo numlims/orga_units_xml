@@ -7,7 +7,7 @@ name = orga_units_xml
 # get the version from github tag
 # sort by version; get the last line; delete the v from the version tag cause python build seems to strip it as well
 # version = $(shell git tag | sort -V | tail -1 | tr -d v)
-version = 0.0.2
+version = 0.0.3
 all:
 	
 

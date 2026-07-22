@@ -8,7 +8,7 @@ import tr
 import yaml
 from lxml import etree as ET
 
-from templating import render_template_value
+from .templating import render_template_value
 
 traction: Any | None = None
 NS = "http://www.kairos-med.de"
