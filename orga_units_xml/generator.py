@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -92,6 +93,62 @@ def _add_org_unit_item(catalogue_data: ET._Element, ou: dict[str, Any]) -> None:
     _add_org_unit_entry(item, "en", name_en)
 
 
+def _parse_active_until(value: Any) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+
+    text = _clean_text(value)
+    if not text:
+        return None
+
+    normalized = text.replace("Z", "+00:00")
+    return datetime.fromisoformat(normalized)
+
+
+def _validate_traction_user_is_active(
+    traction_user: Any, requested_username: str
+) -> None:
+    username = _clean_text(getattr(traction_user, "username", requested_username))
+    entitystatus = _clean_text(getattr(traction_user, "entitystatus", "")).upper()
+    if entitystatus != "ACTIVE":
+        raise ValueError(
+            f"User '{username}' is invalid: entitystatus must be 'ACTIVE', got '{entitystatus or '<empty>'}'. please remove the user in YAML or ensure the user is active in the CentraXX."
+        )
+
+    active_until_raw = getattr(traction_user, "active_until", None)
+    try:
+        active_until = _parse_active_until(active_until_raw)
+    except ValueError as exc:
+        raise ValueError(
+            f"User '{username}' is invalid: active_until '{active_until_raw}' is not a valid ISO datetime."
+        ) from exc
+
+    # In Traction, NULL/empty active_until means unlimited validity.
+    if active_until is None:
+        return
+
+    now = datetime.now(tz=active_until.tzinfo)
+    if active_until <= now:
+        raise ValueError(
+            f"User '{username}' is invalid: active_until '{active_until.isoformat()}' is expired. Please remove the user in YAML or ensure the user is active and has a valid active_until date in the CentraXX."
+        )
+
+
+def _get_required_active_traction_user(username: str) -> Any:
+    user_details = traction.user(usernames=[username], verbose_all=True)
+    if not user_details:
+        raise ValueError(
+            f"User '{username}' not found in CentraXX. Please correct the username in the YAML or ensure the user exists in the CentraXX."
+        )
+
+    traction_user = user_details[0]
+    _validate_traction_user_is_active(traction_user, username)
+    return traction_user
+
+
+# assing only active users where entitystatus is ACTIVE and active_until date is not None or expired. If any user in traction doesn't exist, stop the process and raise an error.
 def _assign_users_to_organisation_units(
     catalogue_data: ET._Element,
     all_organisation_unit_assignments: list[dict[str, Any]],
@@ -107,12 +164,13 @@ def _assign_users_to_organisation_units(
                 all_users.append(username)
             if username and username not in role_by_username:
                 role_by_username[username] = role_name
-
+    # if any user in traction doesn't exist, stop the process and raise an error
     for username in all_users:
-        user_details = traction.user(usernames=[username], verbose_all=True)
-        traction_user = user_details[0] if user_details else None
+        traction_user = _get_required_active_traction_user(username)
         participant = ET.SubElement(catalogue_data, _tag("Participant"))
         username_traction = _clean_text(getattr(traction_user, "username", username))
+        if not username_traction:
+            raise ValueError(f"User '{username_traction}' does not exist.")
         lastname_traction = _clean_text(
             getattr(traction_user, "lastname", "") or username_traction
         )
@@ -200,10 +258,18 @@ def _add_study_effect_data(
     if study_name:
         _add_text_element(flexi_study, "Name", study_name)
 
-    if existing_users or existing_orgas:
+    validated_users: list[str] = []
+    for username in existing_users:
+        traction_user = _get_required_active_traction_user(username)
+        username_traction = _clean_text(getattr(traction_user, "username", username))
+        if not username_traction:
+            raise ValueError(f"User '{username}' does not exist.")
+        _append_unique(validated_users, username_traction)
+
+    if validated_users or existing_orgas:
         user_entries = ET.SubElement(flexi_study, _tag("UserEntries"))
 
-        for username in existing_users:
+        for username in validated_users:
             _add_user_entry(user_entries, "ParticipantRef", username)
 
         for orga in existing_orgas:
