@@ -10,7 +10,7 @@ from lxml import etree as ET
 
 from .templating import render_template_value
 
-traction = tr.traction("num_test")
+traction: Any | None = None
 NS = "http://www.kairos-med.de"
 XSI_NS = "http://www.w3.org/2001/XMLSchema-instance"
 
@@ -31,6 +31,22 @@ ADDRESS_FIELDS: tuple[tuple[str, str], ...] = (
 
 def _tag(name: str) -> str:
     return f"{{{NS}}}{name}"
+
+
+def _configure_traction(db_name: str) -> None:
+    global traction
+    clean_db_name = _clean_text(db_name)
+    if not clean_db_name:
+        raise ValueError("Database name must not be empty.")
+    traction = tr.traction(clean_db_name)
+
+
+def _require_traction() -> Any:
+    if traction is None:
+        raise RuntimeError(
+            "Traction is not configured. Call build_xml_documents_from_yaml with a database name."
+        )
+    return traction
 
 
 def _clean_text(value: Any, fallback: str = "") -> str:
@@ -137,7 +153,7 @@ def _validate_traction_user_is_active(
 
 
 def _get_required_active_traction_user(username: str) -> Any:
-    user_details = traction.user(usernames=[username], verbose_all=True)
+    user_details = _require_traction().user(usernames=[username], verbose_all=True)
     if not user_details:
         raise ValueError(
             f"User '{username}' not found in CentraXX. Please correct the username in the YAML or ensure the user exists in the CentraXX."
@@ -225,7 +241,7 @@ def _add_study_effect_data(
 
     trial_code = _clean_text(study_permissions.get("study_code"))
 
-    trial_details = traction.trial(trials=[trial_code]) if trial_code else []
+    trial_details = _require_traction().trial(trials=[trial_code]) if trial_code else []
     traction_trial = trial_details[0] if trial_details else None
     existing_users: list[str] = []
     existing_orgas: list[str] = []
@@ -281,7 +297,7 @@ def _add_study_effect_data(
 
 def _lookup_location(location_id: str) -> tuple[str, str]:
     location_details = (
-        traction.location(locationids=[location_id]) if location_id else []
+        _require_traction().location(locationids=[location_id]) if location_id else []
     )
     if not location_details:
         raise ValueError(f"Location '{location_id}' not found in CentraXX.")
@@ -420,7 +436,11 @@ def _build_exchange_root(metadata: dict[str, Any]) -> ET._Element:
     return root
 
 
-def build_xml_documents_from_yaml(yaml_path: Path) -> dict[str, ET._Element]:
+def build_xml_documents_from_yaml(
+    yaml_path: Path,
+    db_name: str,
+) -> dict[str, ET._Element]:
+    _configure_traction(db_name)
     data = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError("Top-level YAML structure must be a mapping/object.")
