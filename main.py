@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 from lxml import etree as ET
@@ -48,6 +47,8 @@ def main() -> int:
 
     return 0
 
+
+import sys
 
 if __name__ == "__main__":
     try:
