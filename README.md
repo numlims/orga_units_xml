@@ -20,6 +20,7 @@ Current support:
 
 ```bash
 /home/aminn/org_unit_imp/.venv/bin/python main.py \
+	num_test \
 	--input templates/org_unit_import.yaml \
 	--output-dir output \
 	--prefix rapid_elapse_test

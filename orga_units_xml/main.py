@@ -12,6 +12,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate CentraXX OU import XML files from YAML"
     )
+    parser.add_argument("db_name", help="CentraXX database name")
     parser.add_argument("--input", required=True, help="Path to YAML input file")
     parser.add_argument(
         "--output-dir", required=True, help="Directory for output XML files"
@@ -33,7 +34,7 @@ def main() -> int:
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    docs = build_xml_documents_from_yaml(input_path)
+    docs = build_xml_documents_from_yaml(input_path, args.db_name)
 
     for key, xml_root in docs.items():
         output_path = output_dir / f"{args.prefix}_{key}.xml"
@@ -55,4 +56,3 @@ if __name__ == "__main__":
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         raise SystemExit(1)
-sys.exit(main())
