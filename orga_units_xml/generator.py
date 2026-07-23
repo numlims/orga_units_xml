@@ -59,11 +59,21 @@ def _add_text_element(parent: ET._Element, tag_name: str, value: Any) -> ET._Ele
     return element
 
 
+def safe_iterate(obj: Any, default=None):
+    if obj is not None:
+        for item in obj:
+            yield item
+    else:
+        if default is not None:
+            for item in default:
+                yield item
+
+
 def _extract_value(source: Any | None, field_names: tuple[str, ...]) -> Any:
     if source is None:
         return ""
 
-    for field_name in field_names:
+    for field_name in safe_iterate(field_names):
         if isinstance(source, dict):
             value = source.get(field_name)
         else:
@@ -164,7 +174,7 @@ def _get_required_active_traction_user(username: str) -> Any:
     return traction_user
 
 
-# assing only active users where entitystatus is ACTIVE and active_until date is not None or expired. If any user in traction doesn't exist, stop the process and raise an error.
+# assing only active users where entitystatus is ACTIVE and active_until date is not None or expired.
 def _assign_users_to_organisation_units(
     catalogue_data: ET._Element,
     all_organisation_unit_assignments: list[dict[str, Any]],
@@ -172,16 +182,16 @@ def _assign_users_to_organisation_units(
 ) -> None:
     role_by_username: dict[str, str] = {}
     all_users = []
-    for role in all_organisation_unit_assignments:
+    for role in safe_iterate(all_organisation_unit_assignments, default=[]):
         role_name = _clean_text(role.get("role"))
-        for user in role.get("users", []):
+        for user in safe_iterate(role.get("users"), default=[]):
             username = _clean_text(user.get("username"))
             if username and username not in all_users:
                 all_users.append(username)
             if username and username not in role_by_username:
                 role_by_username[username] = role_name
     # if any user in traction doesn't exist, stop the process and raise an error
-    for username in all_users:
+    for username in safe_iterate(all_users, default=[]):
         traction_user = _get_required_active_traction_user(username)
         participant = ET.SubElement(catalogue_data, _tag("Participant"))
         username_traction = _clean_text(getattr(traction_user, "username", username))
@@ -198,7 +208,7 @@ def _assign_users_to_organisation_units(
         address = ET.SubElement(participant, _tag("Address"))
         _populate_address(address, getattr(traction_user, "address", None))
 
-        for org_unit in organisation_units:
+        for org_unit in safe_iterate(organisation_units, default=[]):
             org = ET.SubElement(participant, _tag("OrganisationUnit"))
             _add_text_element(org, "OrganisationUnitRefs", org_unit["code"])
             _add_text_element(org, "RoleRef", role_by_username.get(username, ""))
@@ -253,7 +263,7 @@ def _add_study_effect_data(
         _append_unique(existing_orgas, orga)
 
     # append organisation units from YAML.
-    for org_unit in organisation_units or []:
+    for org_unit in safe_iterate(organisation_units, default=[]):
         _append_unique(existing_orgas, org_unit.get("code"))
 
     effect_data = ET.SubElement(root, _tag("EffectData"))
@@ -275,7 +285,7 @@ def _add_study_effect_data(
         _add_text_element(flexi_study, "Name", study_name)
 
     validated_users: list[str] = []
-    for username in existing_users:
+    for username in safe_iterate(existing_users, default=[]):
         traction_user = _get_required_active_traction_user(username)
         username_traction = _clean_text(getattr(traction_user, "username", username))
         if not username_traction:
@@ -288,7 +298,7 @@ def _add_study_effect_data(
         for username in validated_users:
             _add_user_entry(user_entries, "ParticipantRef", username)
 
-        for orga in existing_orgas:
+        for orga in safe_iterate(existing_orgas, default=[]):
             _add_user_entry(user_entries, "OrganisationUnitRef", orga)
 
 
@@ -374,7 +384,7 @@ def _add_storage_location_items(
     _add_text_element(
         sample_location_instance, "LocationSchemaRef", root_location_schema
     )
-    for org_unit in organisation_units:
+    for org_unit in safe_iterate(organisation_units, default=[]):
         rendered_template = render_template_value(storage_locations_template, org_unit)
         assigned_org_unit_ref = _clean_text(org_unit.get("code"))
         for sub_location in rendered_template.get("root_sub_locations", []):
@@ -387,7 +397,7 @@ def _validate_input(data: dict[str, Any]) -> None:
     if "organisation_units" not in data:
         raise ValueError("Missing 'organisation_units' in YAML.")
 
-    if "centers" not in data["organisation_units"]:
+    if "centers" not in safe_iterate(data.get("organisation_units"), default={}):
         raise ValueError("Missing 'organisation_units.centers' in YAML.")
 
     centers = data["organisation_units"]["centers"]
@@ -456,7 +466,7 @@ def build_xml_documents_from_yaml(
 
     organisation_units = data["organisation_units"]["centers"]
 
-    for center in organisation_units:
+    for center in safe_iterate(organisation_units, default=[]):
         _add_org_unit_item(master_catalogue_data, center)
 
     # User import (Participant with OU roles)
