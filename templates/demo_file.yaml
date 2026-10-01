@@ -1,0 +1,77 @@
+organisation_units:
+  # List of organisation units to create/import.
+  centers:
+    # Unique code for the organisation unit.
+    # Example: "RAPID_ELAPSE_10_Giessen"
+    - code: <OE_CODE>
+      # Display names in German/English.
+      # Example: "Gießen ELAPSE/Gießen ELAPSE"
+      name_de: <OE_DISPLAY_NAME_DE>
+      name_en: <OE_DISPLAY_NAME_EN>
+      # Parent of the organisation unit
+      # Example: "RAPID_ELAPSE"
+      parent_code: <PARENT_OE_CODE>
+      # Existing root location in storage tree where this center belongs.
+      # Example: "UKGM Universitätsklinikum Gießen / Marburg"
+      storage_root_location_id: <EXISTING_STORAGE_ROOT_LOCATION>
+      sub_locations:
+        # Child storage location 1.
+        # Example: "PP Lager RT ELAPSE"
+        - location_name: <SUB_LOCATION_NAME_1>
+          # schema reference for this sub-location
+          # Example: "PPLAGER"
+          location_schema_ref: <LOCATION_SCHEMA_REF_1>
+          inherit_temperature: true
+        # Child storage location 2.
+        - location_name: <SUB_LOCATION_NAME_2>
+          location_schema_ref: <LOCATION_SCHEMA_REF_2>
+          inherit_temperature: false
+
+all_organisation_unit_assignments:
+  # admin role
+  - role: Administratoren
+    users:
+      - username: schattm
+      - username: schaeferc
+      - username: hauboldm
+      - username: saenkos
+      - username: aminn
+  # user role for the study Nurse/Study Team
+  - role: NUM-StudyNurseMTLA-Kombi
+    users:
+      - username: skunze
+      - username: lschuenemann
+      - username: abalasubramaniam
+      - username: belode
+      - username: bfoesel
+      - username: cdolch
+      - username: cstork
+      - username: ganton
+      - username: nnizhegorodteseva
+      - username: pschweier
+      - username: smuecke
+      - username: tpweber
+      - username: vkopfnagel
+      - username: yvogelpohl
+
+study_permissions:
+  # Study profile code
+  study_profile_ref: NUM-Studie
+  # Study code
+  # Example: "NUM RAPID_ELAPSE"
+  study_code: <STUDY_CODE>
+
+  # --------------- NO changes needed below this line. -------------------
+
+storage_location_assignments_template:
+  # root node in location tree.
+  root_location:
+    location_id: NUM
+
+  # template for OE-specific storage location assignment.
+  root_sub_locations:
+    - location_id: ${ storage_root_location_id }
+      sub_locations:
+        - location_id: ${ location_name }
+          location_schema_ref: ${ location_schema_ref }
+          inherit_temperature: ${ inherit_temperature }

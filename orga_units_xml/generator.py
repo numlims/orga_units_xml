@@ -255,6 +255,8 @@ def _add_study_effect_data(
     traction_trial = trial_details[0] if trial_details else None
     existing_users: list[str] = []
     existing_orgas: list[str] = []
+    if not traction_trial:
+        raise ValueError(f"Trial '{trial_code}' not found in CentraXX.")
 
     for username in _get_trial_field(traction_trial, "users", []):
         _append_unique(existing_users, username)
@@ -354,6 +356,7 @@ def _add_unassigned_storage_sub_location(
     sub_location: dict[str, Any],
     assigned_org_unit_ref: str,
 ) -> None:
+
     sub_location_instance = ET.SubElement(parent_location, _tag("SubLocationInstance"))
     location_id = _clean_text(sub_location.get("location_id"))
     _, location_schema_ref = _lookup_location(location_id)
