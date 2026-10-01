@@ -69,9 +69,11 @@ def main() -> int:
         return 0
 
     if not args.db_name or not args.input or not args.output_dir:
-        raise ValueError(
-            "Missing required arguments: db_name, --input, and --output-dir are required (-h for help)"
+        print(
+            "Error: Missing required arguments: db_name, --input, and --output-dir are required (-h for help)",
+            file=sys.stderr,
         )
+        return 1
 
     input_path = Path(args.input)
     output_dir = Path(args.output_dir)
