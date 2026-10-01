@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta" # name of the python object that fronten
 
 [project]
 name = "orga_units_xml"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   { name="numlims", email="numlims@med.uni-greifswald.de"}
 ]
@@ -22,9 +22,9 @@ classifiers = [
 ]
 
 [project.scripts]
-orga_units_xml = "orga_units_xml.main:main"
+goe = "orga_units_xml.main:main"
 
 [tool.setuptools]
-packages = ["orga_units_xml"]
+packages = ["orga_units_xml", "templates"]
 
 
